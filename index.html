@@ -17,29 +17,27 @@
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .dropdown-content { display: none; position: absolute; z-index: 100; width: 100%; max-height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s; }
+        .dropdown-content { display: none; position: absolute; z-index: 100; width: 100%; max-height: 350px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .dark .dropdown-content { background: #1e293b; border-color: #475569; }
         .show { display: block; }
         .label-filter { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        
+        /* Tooltip para os Cards */
+        .kpi-card { position: relative; cursor: help; }
+        .kpi-card .tooltip-text { 
+            visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; 
+            border-radius: 6px; padding: 10px; position: absolute; z-index: 50; bottom: 110%; left: 50%; 
+            margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 11px; line-height: 1.4; font-weight: 400; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .kpi-card:hover .tooltip-text { visibility: visible; opacity: 1; }
+
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         th { background-color: #f8fafc; text-align: left; padding: 12px; font-weight: 700; color: #64748b; }
         .dark th { background-color: #334155; color: #cbd5e1; }
         td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
         .dark td { border-bottom-color: #334155; }
-        
-        /* Tooltip customizado para os cards */
-        .kpi-card { position: relative; cursor: help; transition: transform 0.2s; }
-        .kpi-card:hover { transform: translateY(-2px); }
-        .kpi-card .tooltip-text { 
-            visibility: hidden; width: 200px; background-color: #334155; color: #fff; text-align: center; 
-            border-radius: 6px; padding: 8px; position: absolute; z-index: 50; bottom: 110%; left: 50%; 
-            margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 11px; line-height: 1.4; font-weight: 400;
-        }
-        .kpi-card:hover .tooltip-text { visibility: visible; opacity: 1; }
-        
         .search-filter-input { position: sticky; top: 0; background: inherit; padding: 8px; z-index: 10; border-bottom: 1px solid #e2e8f0; }
-        .dark .search-filter-input { border-bottom-color: #475569; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 dark:bg-darkBg dark:text-slate-100 p-4 md:p-8">
@@ -50,8 +48,8 @@
             <p id="lastUpdateInfo" class="text-[10px] text-slate-400 font-bold uppercase mt-1"></p>
         </div>
         <div class="flex items-center gap-3">
-            <button onclick="exportFilteredData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-md font-medium text-sm">📥 Excel</button>
-            <button onclick="exportDashboardToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition shadow-md font-medium text-sm">📄 PDF</button>
+            <button onclick="exportFilteredData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium text-sm">📥 Excel</button>
+            <button onclick="exportDashboardToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm">📄 PDF</button>
             <button onclick="toggleTheme()" class="bg-slate-200 dark:bg-slate-700 p-2 rounded-lg">🌓</button>
         </div>
     </header>
@@ -112,6 +110,7 @@
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96"><canvas id="chartCourses"></canvas></div>
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96"><canvas id="chartFacilitators"></canvas></div>
             </div>
+            <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm mb-8 h-80"><canvas id="chartTimeline"></canvas></div>
         </div>
 
         <section class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm">
@@ -119,9 +118,7 @@
                 <h3 class="font-bold text-sm uppercase">📋 Detalhamento dos Dados</h3>
                 <input type="text" id="tableSearch" placeholder="🔍 Pesquisar..." onkeyup="filterTable()" class="md:w-72 text-sm p-2 bg-slate-50 dark:bg-slate-800 border rounded">
             </div>
-            <div class="overflow-x-auto">
-                <table id="mainTable"><thead><tr><th>FCP</th><th>Nome</th><th>Cluster</th><th>Curso</th><th>Status</th><th>Método</th></tr></thead><tbody id="tableBody"></tbody></table>
-            </div>
+            <div class="overflow-x-auto"><table id="mainTable"><thead><tr><th>FCP</th><th>Nome</th><th>Cluster</th><th>Curso</th><th>Evento</th><th>Status</th><th>Função</th><th>Facilitador</th><th>Método</th></tr></thead><tbody id="tableBody"></tbody></table></div>
         </section>
     </main>
 
@@ -153,7 +150,7 @@
             const isShowing = el.classList.contains('show');
             document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
             if (!isShowing) el.classList.add('show');
-            else updateDashboard(); // Atualiza apenas ao fechar
+            else updateDashboard(); // Atualiza ao fechar
         }
 
         window.onclick = (e) => { 
@@ -180,9 +177,10 @@
 
         function renderDropdown(id, key, opts) {
             const container = document.getElementById(id);
-            container.innerHTML = `<div class="search-filter-input"><input type="text" placeholder="🔍 Pesquisar..." class="w-full p-1 text-xs border rounded mb-2 dark:bg-slate-700" onkeyup="filterOpts('${id}', this.value)" onclick="event.stopPropagation()">
-            <button onclick="selectVisible('${id}', '${key}')" class="text-[9px] bg-blue-100 text-blue-600 p-1 rounded font-bold uppercase w-full mb-1">Selecionar Resultados da Busca</button></div>
-            <div class="opts-list p-2"></div>`;
+            container.innerHTML = `<div class="search-filter-input">
+                <input type="text" placeholder="🔍 Pesquisar..." class="w-full p-1 text-xs border rounded mb-2 dark:bg-slate-700" onkeyup="filterOpts('${id}', this.value)" onclick="event.stopPropagation()">
+                <button onclick="selectVisible('${id}', '${key}')" class="text-[9px] bg-blue-100 text-blue-600 p-1 rounded font-bold uppercase w-full mb-1">Selecionar Resultados da Busca</button>
+            </div><div class="opts-list p-2"></div>`;
             const list = container.querySelector('.opts-list');
             opts.filter(o => o).forEach(o => {
                 const div = document.createElement('div');
@@ -216,6 +214,9 @@
                 return (!s || d >= new Date(s)) && (!e || d <= new Date(e + 'T23:59:59')) &&
                     (!selectedFilters.methods.length || selectedFilters.methods.includes(i[cols.method])) &&
                     (!selectedFilters.courses.length || selectedFilters.courses.includes(i[cols.course])) &&
+                    (!selectedFilters.events.length || selectedFilters.events.includes(i[cols.event])) &&
+                    (!selectedFilters.facilitators.length || selectedFilters.facilitators.includes(i[cols.facilitator])) &&
+                    (!selectedFilters.roles.length || selectedFilters.roles.includes(i[cols.role])) &&
                     (!selectedFilters.clusters.length || selectedFilters.clusters.includes(i[cols.cluster]));
             });
             renderKPIs(); renderCharts(); renderTable();
@@ -233,35 +234,30 @@
         }
 
         function renderCharts() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#cbd5e1' : '#475569';
-            const totalGlobalComp = currentFilteredData.filter(i => i[cols.status] === 'Completed' || i[cols.status] === 'Attended').length;
+            const isDark = document.documentElement.classList.contains('dark'), textColor = isDark ? '#cbd5e1' : '#475569';
+            const totalComp = currentFilteredData.filter(i => i[cols.status] === 'Completed' || i[cols.status] === 'Attended').length;
 
-            // Chart Top 5 Cursos (Ajustado com Nome Completo e %)
-            const cMap = {};
-            currentFilteredData.filter(i => i[cols.status] === 'Completed' || i[cols.status] === 'Attended').forEach(i => {
-                cMap[i[cols.course]] = (cMap[i[cols.course]] || 0) + 1;
-            });
-            const topC = Object.entries(cMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            
+            // 1. Eficiência por Método
+            const mData = { 'CBT': 0, 'Instructor Led': 0 }; currentFilteredData.forEach(i => { if(i[cols.method]?.includes('Computer')) mData['CBT']++; else mData['Instructor Led']++; });
+            updateChart('chartMethodEff', 'pie', { labels: Object.keys(mData), datasets:[{ data: Object.values(mData), backgroundColor:['#10b981','#f59e0b'] }] }, { plugins:{legend:{labels:{color:textColor}}} });
+
+            // 2. Clusters
+            const cMap = {}; currentFilteredData.forEach(i => cMap[i[cols.cluster] || 'N/A'] = (cMap[i[cols.cluster] || 'N/A'] || 0) + 1);
+            const topClusters = Object.entries(cMap).sort((a,b)=>b[1]-a[1]).slice(0, 8);
+            updateChart('chartCluster', 'bar', { labels: topClusters.map(x=>x[0]), datasets:[{ data: topClusters.map(x=>x[1]), backgroundColor:'#3b82f6' }] }, { plugins:{legend:{display:false}}, scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor}}} });
+
+            // 3. Top 5 Cursos (Com Nome Completo e %)
+            const courseMap = {}; currentFilteredData.filter(i => i[cols.status] === 'Completed' || i[cols.status] === 'Attended').forEach(i => courseMap[i[cols.course]] = (courseMap[i[cols.course]] || 0) + 1);
+            const topC = Object.entries(courseMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             updateChart('chartCourses', 'bar', {
                 labels: topC.map(x => x[0].length > 25 ? x[0].substring(0, 25) + '...' : x[0]),
-                datasets: [{ 
-                    label: 'Conclusões', 
-                    data: topC.map(x => x[1]), 
-                    backgroundColor: '#8b5cf6',
-                    fullNames: topC.map(x => x[0]) // Armazena nome completo para o tooltip
-                }]
+                datasets: [{ label: 'Conclusões', data: topC.map(x => x[1]), backgroundColor: '#8b5cf6', fullNames: topC.map(x => x[0]) }]
             }, {
                 indexAxis: 'y',
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => {
-                                const val = ctx.raw;
-                                const perc = totalGlobalComp ? ((val / totalGlobalComp) * 100).toFixed(1) : 0;
-                                return ` Conclusões: ${val} (${perc}%)`;
-                            },
+                            label: (ctx) => ` Conclusões: ${ctx.raw} (${totalComp ? ((ctx.raw/totalComp)*100).toFixed(1) : 0}%)`,
                             title: (items) => items[0].dataset.fullNames[items[0].dataIndex]
                         }
                     },
@@ -270,40 +266,29 @@
                 scales: { x: { ticks: { color: textColor } }, y: { ticks: { color: textColor } } }
             });
 
-            // Outros Gráficos (Simplicados)
-            const clusterMap = {}; currentFilteredData.forEach(i => clusterMap[i[cols.cluster] || 'N/A'] = (clusterMap[i[cols.cluster] || 'N/A'] || 0) + 1);
-            const topClusters = Object.entries(clusterMap).sort((a,b)=>b[1]-a[1]).slice(0, 8);
-            updateChart('chartCluster', 'bar', { labels: topClusters.map(x=>x[0]), datasets:[{ data: topClusters.map(x=>x[1]), backgroundColor:'#3b82f6' }] }, { plugins:{legend:{display:false}}, scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor}}} });
-            
-            const mData = { 'CBT': 0, 'Instructor Led': 0 }; currentFilteredData.forEach(i => { if(i[cols.method].includes('Computer')) mData['CBT']++; else mData['Instructor Led']++; });
-            updateChart('chartMethodEff', 'pie', { labels: Object.keys(mData), datasets:[{ data: Object.values(mData), backgroundColor:['#10b981','#f59e0b'] }] }, { plugins:{legend:{labels:{color:textColor}}} });
-
+            // 4. Facilitadores
             const facMap = {}; currentFilteredData.filter(i=>i[cols.status]==='Completed').forEach(i => facMap[i[cols.facilitator]||'N/A'] = (facMap[i[cols.facilitator]||'N/A']||0)+1);
             const topFac = Object.entries(facMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
             updateChart('chartFacilitators', 'bar', { labels: topFac.map(x=>x[0]), datasets:[{ data: topFac.map(x=>x[1]), backgroundColor:'#005eb8' }] }, { scales:{x:{ticks:{color:textColor}},y:{ticks:{color:textColor}}} });
+
+            // 5. Timeline
+            const tData = new Array(12).fill(0); currentFilteredData.filter(i=>i[cols.status]==='Completed').forEach(i => { const m = new Date(i[cols.date]).getMonth(); if(!isNaN(m)) tData[m]++; });
+            updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: tData, borderColor: '#ef4444', tension: 0.3, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.1)' }] }, { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: textColor } }, y: { ticks: { color: textColor } } } });
         }
 
-        function updateChart(id, type, data, options) {
-            if (charts[id]) charts[id].destroy();
-            charts[id] = new Chart(document.getElementById(id), { type, data, options: { ...options, maintainAspectRatio: false } });
-        }
+        function updateChart(id, type, data, options) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), { type, data, options: { ...options, maintainAspectRatio: false } }); }
 
         function renderTable() {
-            document.getElementById('tableBody').innerHTML = currentFilteredData.slice(0, 100).map(i => `<tr>
-                <td>${i[cols.fcp]}</td><td>${i[cols.name]}</td><td>${i[cols.cluster]}</td><td>${i[cols.course]}</td>
+            document.getElementById('tableBody').innerHTML = currentFilteredData.map(i => `<tr>
+                <td>${i[cols.fcp]}</td><td>${i[cols.name]}</td><td>${i[cols.cluster]}</td><td>${i[cols.course]}</td><td>${i[cols.event]}</td>
                 <td><span class="px-2 py-1 rounded text-[10px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}">${i[cols.status]}</span></td>
-                <td>${i[cols.method]}</td>
+                <td>${i[cols.role]}</td><td>${i[cols.facilitator]}</td><td>${i[cols.method]}</td>
             </tr>`).join('');
         }
 
         function filterTable() { const t = document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#tableBody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(t) ? '' : 'none'); }
-
         async function exportDashboardToPDF() { const canvas = await html2canvas(document.getElementById('pdfArea')); const img = canvas.toDataURL('image/png'); const pdf = new jspdf.jsPDF('p', 'mm', 'a4'); pdf.addImage(img, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width); pdf.save('Relatorio.pdf'); }
-        
-        function exportFilteredData() {
-            const ws = XLSX.utils.json_to_sheet(currentFilteredData); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Dados"); XLSX.writeFile(wb, "Relatorio_OpEx.xlsx");
-        }
+        function exportFilteredData() { const ws = XLSX.utils.json_to_sheet(currentFilteredData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Dados"); XLSX.writeFile(wb, "Relatorio.xlsx"); }
     </script>
 </body>
 </html>
