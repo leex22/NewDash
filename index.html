@@ -45,8 +45,16 @@
         .dark .btn-export-mini:hover { background: #475569; }
         .search-filter-input { position: sticky; top: 0; background: white; padding: 8px; z-index: 10; border-bottom: 1px solid #e2e8f0; }
         .dark .search-filter-input { background: #1e293b; border-bottom-color: #475569; }
-        .kpi-card { transition: transform 0.2s; }
+        
+        /* Tooltips para KPIs */
+        .kpi-card { transition: transform 0.2s; position: relative; cursor: help; }
         .kpi-card:hover { transform: translateY(-2px); }
+        .tooltip-text { 
+            visibility: hidden; width: 200px; background-color: #334155; color: #fff; text-align: center; 
+            border-radius: 6px; padding: 8px; position: absolute; z-index: 50; bottom: 110%; left: 50%; 
+            margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 11px; font-weight: 400; line-height: 1.4;
+        }
+        .kpi-card:hover .tooltip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 dark:bg-darkBg dark:text-slate-100 p-4 md:p-8">
@@ -95,22 +103,27 @@
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div class="kpi-card bg-white dark:bg-darkCard p-4 rounded-xl border-l-4 border-blue-500 shadow-sm text-center">
+                    <span class="tooltip-text">Quantidade de pessoas nos cursos/treinamentos, independente de quantos cursos/treinamentos fizeram.</span>
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Pessoas Únicas</p>
                     <h2 class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="kpiUnique">0</h2>
                 </div>
                 <div class="kpi-card bg-white dark:bg-darkCard p-4 rounded-xl border-l-4 border-indigo-500 shadow-sm text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Total Participações</p>
+                    <span class="tooltip-text">Volume total de inscritos. Se uma pessoa está em 3 cursos, ela gera 3 participações.</span>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Total Inscrições</p>
                     <h2 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400" id="kpiTotal">0</h2>
                 </div>
                 <div class="kpi-card bg-white dark:bg-darkCard p-4 rounded-xl border-l-4 border-green-500 shadow-sm text-center">
+                    <span class="tooltip-text">Total de treinamentos finalizados com sucesso pelo público-alvo.</span>
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Concluídos</p>
                     <h2 class="text-2xl font-bold text-green-600 dark:text-green-400" id="kpiCompleted">0</h2>
                 </div>
                 <div class="kpi-card bg-white dark:bg-darkCard p-4 rounded-xl border-l-4 border-amber-500 shadow-sm text-center">
+                    <span class="tooltip-text">Matrículas que foram iniciadas ou registradas, mas ainda não chegaram à conclusão.</span>
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Drop-out / Pendente</p>
                     <h2 class="text-2xl font-bold text-amber-600 dark:text-amber-400" id="kpiDropout">0</h2>
                 </div>
                 <div class="kpi-card bg-white dark:bg-darkCard p-4 rounded-xl border-l-4 border-purple-500 shadow-sm text-center">
+                    <span class="tooltip-text">Percentual de conversão que mostra o quanto das inscrições totais resultaram em conclusões.</span>
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Taxa de Eficiência</p>
                     <h2 class="text-2xl font-bold text-purple-600 dark:text-purple-400" id="kpiRate">0%</h2>
                 </div>
@@ -451,6 +464,7 @@
                 return Object.values(map);
             };
             const uniqueData = mapUser(d);
+            const totalConclusoesGlobal = uniqueData.filter(i => i.isCompleted).length;
 
             // 1. Eficiência por Método (Stacked Bar)
             const methodStats = {};
@@ -481,14 +495,42 @@
                 datasets: [{ data: cLabels.map(l => clusterStats[l]), backgroundColor: '#3b82f6', borderRadius: 4 }]
             }, { plugins: { legend: { display: false }, datalabels: { color: isDark?'#fff':'#333', anchor: 'end', align: 'top', font:{weight:'bold'} } }, scales: { x: { ticks:{color: tColor, font:{size:10}} }, y: { ticks:{color: tColor} } } });
 
-            // 3. Top Cursos
+            // 3. Top Cursos (Ajustado com Tooltips Complexos)
             const courseStats = {};
             uniqueData.filter(i=>i.isCompleted).forEach(i => { courseStats[i[cols.course]] = (courseStats[i[cols.course]]||0) + 1; });
             const topC = Object.keys(courseStats).sort((a,b)=>courseStats[b]-courseStats[a]).slice(0,5);
             updateChart('chartCourses', 'bar', {
                 labels: topC.map(n => n.length > 20 ? n.substring(0,20)+'...' : n),
-                datasets: [{ data: topC.map(c => courseStats[c]), backgroundColor: '#8b5cf6', borderRadius: 4 }]
-            }, { indexAxis: 'y', plugins: { legend: { display: false }, datalabels: { color: isDark?'#fff':'#333', anchor: 'end', align: 'right', font:{weight:'bold'} } }, scales: { x:{ticks:{color: tColor}}, y:{ticks:{color: tColor, font:{size:10}}} } });
+                datasets: [{ 
+                    data: topC.map(c => courseStats[c]), 
+                    backgroundColor: '#8b5cf6', 
+                    borderRadius: 4,
+                    fullNames: topC // Passando nomes originais para o tooltip
+                }]
+            }, { 
+                indexAxis: 'y', 
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { 
+                        color: isDark?'#fff':'#333', 
+                        anchor: 'end', 
+                        align: 'right', 
+                        font:{weight:'bold'},
+                        formatter: (val) => val
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => items[0].dataset.fullNames[items[0].dataIndex],
+                            label: (ctx) => {
+                                const val = ctx.raw;
+                                const perc = totalConclusoesGlobal > 0 ? ((val / totalConclusoesGlobal) * 100).toFixed(1) : 0;
+                                return ` Conclusões: ${val} (${perc}%)`;
+                            }
+                        }
+                    }
+                }, 
+                scales: { x:{ticks:{color: tColor}}, y:{ticks:{color: tColor, font:{size:10}}} } 
+            });
 
             // 4. Facilitadores (Stacked)
             const facStats = {};
