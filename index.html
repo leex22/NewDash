@@ -55,9 +55,35 @@
             margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 11px; font-weight: 400; line-height: 1.4;
         }
         .kpi-card:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* CSS para o Modal de Senha */
+        #authOverlay { position: fixed; inset: 0; background: #0f172a; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: white; padding: 2.5rem; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); width: 100%; max-width: 400px; text-align: center; }
+        .auth-title { color: #1e293b; font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .auth-subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
+        .auth-input-container { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 0.75rem; margin-bottom: 1.5rem; transition: border-color 0.2s; }
+        .auth-input-container:focus-within { border-color: #6366f1; }
+        #passInput { background: transparent; border: none; outline: none; width: 100%; padding: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; color: #1e293b; }
+        .auth-button { background: #5356ff; color: white; width: 100%; padding: 1rem; border-radius: 0.75rem; font-weight: 600; transition: background 0.2s; cursor: pointer; border: none; }
+        .auth-button:hover { background: #4346e5; }
+        .error-msg { color: #ef4444; font-size: 0.75rem; margin-top: 0.5rem; display: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 dark:bg-darkBg dark:text-slate-100 p-4 md:p-8">
+
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h2 class="auth-title">Senha de Acesso</h2>
+            <p class="auth-subtitle">Digite a senha para acessar o dashboard</p>
+            
+            <div class="auth-input-container">
+                <input type="password" id="passInput" placeholder="••••" onkeypress="if(event.key==='Enter') checkAuth()">
+            </div>
+            
+            <button onclick="checkAuth()" class="auth-button">Unlock Dashboard</button>
+            <p id="authError" class="error-msg">Senha incorreta. Tente novamente.</p>
+        </div>
+    </div>
 
     <header class="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
@@ -209,13 +235,24 @@
 
     <script>
         const SENHA_MESTRA = "1234"; 
-        (function() {
-            if (sessionStorage.getItem("dashboard_auth") !== "true") {
-                const p = prompt("Acesso Restrito. Digite a senha:");
-                if (p === SENHA_MESTRA) { sessionStorage.setItem("dashboard_auth", "true"); } 
-                else { alert("Senha incorreta!"); document.body.innerHTML = "<h1 style='text-align:center; margin-top:50px; font-family:sans-serif;'>Acesso Negado</h1>"; window.location.reload(); }
+
+        function checkAuth() {
+            const input = document.getElementById('passInput').value;
+            const error = document.getElementById('authError');
+            if (input === SENHA_MESTRA) {
+                sessionStorage.setItem("dashboard_auth", "true");
+                document.getElementById('authOverlay').style.display = 'none';
+            } else {
+                error.style.display = 'block';
+                document.getElementById('passInput').value = '';
             }
-        })();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem("dashboard_auth") === "true") {
+                document.getElementById('authOverlay').style.display = 'none';
+            }
+        });
 
         Chart.register(ChartDataLabels);
         let rawData = [], currentFilteredData = [], charts = {};
